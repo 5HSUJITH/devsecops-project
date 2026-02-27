@@ -13,6 +13,7 @@ const LocalStrategy = require('passport-local');
 const User = require('./models/user');
 
 const campgroundRoutes = require('./routes/campgrounds');
+const userRoutes = require('./routes/users');
 
 const app = express();
 
@@ -94,6 +95,7 @@ app.use((req, res, next) => {
 
 // ================= ROUTES =================
 
+app.use('/', userRoutes);
 app.use('/campgrounds', campgroundRoutes);
 
 app.get('/', (req, res) => {
