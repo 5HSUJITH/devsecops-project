@@ -7,6 +7,7 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const session = require('express-session');
 const flash = require('connect-flash');
+const MongoStore = require('connect-mongo');
 
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -20,18 +21,15 @@ const app = express();
 
 // ================= DATABASE =================
 
-const dbUrl = process.env.DB_URL;
+const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/yelp-camp';
 
-mongoose.connect(dbUrl, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => {
-    console.log("Database connected");
-})
-.catch(err => {
-    console.log("Mongo connection error:", err);
-});
+mongoose.connect(dbUrl)
+    .then(() => {
+        console.log("✅ Database connected");
+    })
+    .catch(err => {
+        console.log("❌ Mongo connection error:", err);
+    });
 
 
 // ================= APP CONFIG =================
@@ -45,29 +43,28 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// ================= SESSION STORE (connect-mongo v3) =================
+// ================= SESSION STORE =================
 
-const MongoDBStore = require('connect-mongo')(session);
-
-const store = new MongoDBStore({
-    url: dbUrl,
-    secret: process.env.SECRET,
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    crypto: {
+        secret: process.env.SECRET || 'secret'
+    },
     touchAfter: 24 * 3600
 });
 
-store.on('error', function (e) {
+store.on("error", (e) => {
     console.log("SESSION STORE ERROR", e);
 });
 
 const sessionConfig = {
     store,
     name: 'session',
-    secret: process.env.SECRET,
+    secret: process.env.SECRET || 'secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
 };
@@ -108,5 +105,5 @@ app.get('/', (req, res) => {
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
-    console.log(`Serving on port ${port}`);
+    console.log(`🚀 Serving on port ${port}`);
 });
