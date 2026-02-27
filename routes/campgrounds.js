@@ -1,32 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const campgrounds = require('../controllers/campgrounds');
+const Campground = require('../models/campground');
 const catchAsync = require('../utils/catchAsync');
 const { isLoggedIn, isAuthor, validateCampground } = require('../middleware');
+
 const multer = require('multer');
 const { storage } = require('../cloudinary');
 const upload = multer({ storage });
 
-const Campground = require('../models/campground');
-
 router.route('/')
-    .get(catchAsync(campgrounds.index))
-    .post(isLoggedIn, upload.array('image'), validateCampground, catchAsync(campgrounds.createCampground))
-    // image is a field specified in form
-    // similarly , we have upload.single() for upload one img
+    .get(catchAsync(async (req, res) => {
+        const campgrounds = await Campground.find({});
+        res.render('campgrounds/index', { campgrounds });
+    }))
+    .post(
+        isLoggedIn,
+        upload.array('image'),
+        validateCampground,
+        catchAsync(async (req, res) => {
 
+            const campground = new Campground(req.body.campground);
 
-router.get('/new', isLoggedIn, campgrounds.renderNewForm)
+            campground.images = req.files.map(f => ({
+                url: f.path,
+                filename: f.filename
+            }));
 
-router.route('/:id')
-    .get(catchAsync(campgrounds.showCampground))
-    .put(isLoggedIn, isAuthor, upload.array('image'), validateCampground, catchAsync(campgrounds.updateCampground))
-    .delete(isLoggedIn, isAuthor, catchAsync(campgrounds.deleteCampground));
-    // image is a field specified in form
-    // similarly , we have upload.single() for upload one img
+            campground.author = req.user._id;
 
-router.get('/:id/edit', isLoggedIn, isAuthor, catchAsync(campgrounds.renderEditForm))
+            await campground.save();
 
+            req.flash('success', 'Successfully created campground!');
+            res.redirect(`/campgrounds/${campground._id}`);
+        })
+    );
 
+router.get('/new', isLoggedIn, (req, res) => {
+    res.render('campgrounds/new');
+});
 
 module.exports = router;
