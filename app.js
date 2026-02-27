@@ -7,7 +7,6 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const session = require('express-session');
 const flash = require('connect-flash');
-const MongoDBStore = require('connect-mongo');
 
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -22,13 +21,16 @@ const app = express();
 
 const dbUrl = process.env.DB_URL;
 
-mongoose.connect(dbUrl)
-    .then(() => {
-        console.log("Database connected");
-    })
-    .catch(err => {
-        console.log("Mongo connection error:", err);
-    });
+mongoose.connect(dbUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log("Database connected");
+})
+.catch(err => {
+    console.log("Mongo connection error:", err);
+});
 
 
 // ================= APP CONFIG =================
@@ -42,17 +44,17 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// ================= SESSION STORE =================
+// ================= SESSION STORE (connect-mongo v3) =================
 
-const store = MongoDBStore.create({
-    mongoUrl: dbUrl,
-    crypto: {
-        secret: process.env.SECRET
-    },
+const MongoDBStore = require('connect-mongo')(session);
+
+const store = new MongoDBStore({
+    url: dbUrl,
+    secret: process.env.SECRET,
     touchAfter: 24 * 3600
 });
 
-store.on("error", function (e) {
+store.on('error', function (e) {
     console.log("SESSION STORE ERROR", e);
 });
 
@@ -79,7 +81,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(new LocalStrategy(User.authenticate()));
-
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
