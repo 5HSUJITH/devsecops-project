@@ -3,14 +3,9 @@ pipeline {
 
     stages {
 
-        stage('Clone') {
-            steps {
-                git 'https://github.com/5HSUJITH/devsecops-project.git'
-            }
-        }
-
         stage('Install') {
             steps {
+                sh 'ls -l'
                 sh 'cd app && npm install'
             }
         }
