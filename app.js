@@ -7,7 +7,6 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const session = require('express-session');
 const flash = require('connect-flash');
-const MongoStore = require('connect-mongo');
 
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -21,7 +20,8 @@ const app = express();
 
 // ================= DATABASE =================
 
-const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/yelp-camp';
+// ✅ MongoDB Atlas connection (encoded password)
+const dbUrl = process.env.DB_URL || 'mongodb+srv://sujithchuttugulla_db_user:Sujith%40258@yelp-camp.a9aj1bg.mongodb.net/yelp-camp?retryWrites=true&w=majority';
 
 mongoose.connect(dbUrl)
     .then(() => {
@@ -32,7 +32,7 @@ mongoose.connect(dbUrl)
     });
 
 
-// ================= APP CONFIG =================
+// ================= EXPRESS CONFIG =================
 
 app.engine('ejs', ejsMate);
 app.set('view engine', 'ejs');
@@ -43,28 +43,15 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// ================= SESSION STORE =================
-
-const store = MongoStore.create({
-    mongoUrl: dbUrl,
-    crypto: {
-        secret: process.env.SECRET || 'secret'
-    },
-    touchAfter: 24 * 3600
-});
-
-store.on("error", (e) => {
-    console.log("SESSION STORE ERROR", e);
-});
+// ================= SESSION CONFIG =================
 
 const sessionConfig = {
-    store,
-    name: 'session',
-    secret: process.env.SECRET || 'secret',
+    secret: 'thisshouldbeabettersecret',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
         httpOnly: true,
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
 };
@@ -81,6 +68,9 @@ app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
+
+
+// ================= GLOBAL VARIABLES =================
 
 app.use((req, res, next) => {
     res.locals.currentUser = req.user;
