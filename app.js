@@ -17,20 +17,22 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 
-
 // ================= DATABASE =================
 
-// ✅ MongoDB Atlas connection (encoded password)
-const dbUrl = process.env.DB_URL || 'mongodb+srv://sujithchuttugulla_db_user:Sujith%40258@yelp-camp.a9aj1bg.mongodb.net/yelp-camp?retryWrites=true&w=majority';
+const dbUrl = process.env.DB_URL;
 
-mongoose.connect(dbUrl)
-    .then(() => {
-        console.log("✅ Database connected");
-    })
-    .catch(err => {
-        console.log("❌ Mongo connection error:", err);
-    });
+console.log("DB URL:", dbUrl);
 
+mongoose.connect(dbUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log("✅ Database connected");
+})
+.catch(err => {
+    console.log("❌ Mongo connection error:", err);
+});
 
 // ================= EXPRESS CONFIG =================
 
@@ -42,23 +44,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ================= SESSION =================
 
-// ================= SESSION CONFIG =================
-
-const sessionConfig = {
-    secret: 'thisshouldbeabettersecret',
+app.use(session({
+    secret: 'secret',
     resave: false,
-    saveUninitialized: true,
-    cookie: {
-        httpOnly: true,
-        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
-        maxAge: 1000 * 60 * 60 * 24 * 7
-    }
-};
+    saveUninitialized: true
+}));
 
-app.use(session(sessionConfig));
 app.use(flash());
-
 
 // ================= PASSPORT =================
 
@@ -69,16 +63,12 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-
-// ================= GLOBAL VARIABLES =================
+// ================= GLOBAL =================
 
 app.use((req, res, next) => {
     res.locals.currentUser = req.user;
-    res.locals.success = req.flash('success');
-    res.locals.error = req.flash('error');
     next();
 });
-
 
 // ================= ROUTES =================
 
@@ -88,7 +78,6 @@ app.use('/campgrounds', campgroundRoutes);
 app.get('/', (req, res) => {
     res.redirect('/campgrounds');
 });
-
 
 // ================= SERVER =================
 
