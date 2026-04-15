@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yelpcamp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yelpcamp
+  template:
+    metadata:
+      labels:
+        app: yelpcamp
+    spec:
+      containers:
+      - name: yelpcamp
+        image: 571896969185.dkr.ecr.us-east-1.amazonaws.com/devsecops-app:latest
+        ports:
+        - containerPort: 3000
